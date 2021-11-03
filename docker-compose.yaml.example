@@ -1,0 +1,14 @@
+version: "3"
+services:
+  dgo:
+    build:
+      context: ./serv
+    container_name: dgo
+    volumes:
+      - ${GO_DIR}:/go/src:rw
+      - ${GO_BIN}:/go/bin:rw
+      - ${GO_PKG}:/go/pkg/mod:rw
+    command: "go run /demo.go"
+    ports:
+      - "8081:8081"
+    privileged: true
