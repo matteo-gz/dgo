@@ -5,3 +5,4 @@ gopath/mod
 docker-compose.yaml
 serv/cache
 code
+data

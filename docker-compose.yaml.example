@@ -1,14 +1,43 @@
 version: "3"
 services:
-  dgo:
+  go:
     build:
-      context: ./serv
-    container_name: dgo
+      context: ./serv/go
+    container_name: go
     volumes:
       - ${GO_DIR}:/go/src:rw
       - ${GO_BIN}:/go/bin:rw
       - ${GO_PKG}:/go/pkg/mod:rw
-    command: "go run /demo.go"
     ports:
-      - "8081:8081"
+      - "30099:30099"
     privileged: true
+    stdin_open: true                     # 打开标准输入，可以接受外部输入
+    tty: true
+  netdata:
+    image: netdata/netdata
+    container_name: netdata
+    ports:
+      - 19999:19999
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/portainer:/data
+    ports:
+      - 9009:9000
