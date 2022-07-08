@@ -13,3 +13,4 @@ RUN apk add  protobuf-dev wget
 WORKDIR /go/src/
 Env TEST_SERVER=4
 EXPOSE 30099
+RUN apk add bash
