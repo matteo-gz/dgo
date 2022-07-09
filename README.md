@@ -6,7 +6,7 @@ cp docker-compose.yaml.example docker-compose.yaml
 #set up
 docker-compose up -d
 #entry 
-docker exec -ti dgo sh
+docker exec -ti go sh
 ```
 ```
 go get -u github.com/msoap/go-carpet &&  ln -s $(go env GOPATH)/bin/go-carpet /usr/local/bin/go-carpet

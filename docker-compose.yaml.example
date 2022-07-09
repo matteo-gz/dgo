@@ -11,7 +11,7 @@ services:
     ports:
       - "30099:30099"
     privileged: true
-    stdin_open: true                     # 打开标准输入，可以接受外部输入
+    stdin_open: true                   
     tty: true
   netdata:
     image: netdata/netdata
