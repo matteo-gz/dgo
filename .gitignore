@@ -6,3 +6,4 @@ docker-compose.yaml
 serv/cache
 code
 data
+gopath/cache

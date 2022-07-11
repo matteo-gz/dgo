@@ -7,11 +7,12 @@ services:
     volumes:
       - ${GO_DIR}:/go/src:rw
       - ${GO_BIN}:/go/bin:rw
-      - ${GO_PKG}:/go/pkg/mod:rw
+      - GO_PKG:/go/pkg/mod:rw
+      - GO_CACHE:/root/.cache/go-build:rw
     ports:
       - "30099:30099"
     privileged: true
-    stdin_open: true                   
+    stdin_open: true
     tty: true
   netdata:
     image: netdata/netdata
@@ -42,6 +43,8 @@ services:
     ports:
       - 9009:9000
 
+
+
   mysql5:
     image: mysql/mysql-server:${MYSQL5_VERSION}
     container_name: mysql5
@@ -59,5 +62,79 @@ services:
       MYSQL_ROOT_HOST: "${MYSQL5_ROOT_HOST}"
       TZ: "$TZ"
 
+  beanstalkd:
+    container_name: beanstalkd
+    build:
+      context: ./serv/beanstalkd
+      dockerfile: Dockerfile
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - "./data/beanstalkd:/data/beanstalkd"
+    ports:
+      - "11300:11300"
+
+  beanstalkd2:
+    container_name: beanstalkd2
+    build:
+      context: ./serv/beanstalkd
+      dockerfile: Dockerfile
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - "./data/beanstalkd2:/data/beanstalkd"
+    ports:
+      - "7772:11300"
+
+  beanstalkd-console:
+    container_name: beanstalkd-console
+    build:
+      context: ./serv/beanstalkd-console
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - TZ=Asia/Shanghai
+      - AUTH=enable
+      - AUTH_USERNAME=admin
+      - AUTH_PASSWORD=nosmoking
+      - BEANSTALKD_PORT_11300_TCP_ADDR=beanstalkd
+    ports:
+      - "2080:2080"
+    depends_on:
+      - beanstalkd
+
+  redis:
+    image: redis:${REDIS_VERSION}
+    container_name: redis
+    ports:
+      - "${REDIS_HOST_PORT}:6379"
+    volumes:
+      - ${REDIS_CONF_FILE}:/etc/redis.conf:ro
+      - ${DATA_DIR}/redis:/data/:rw
+    restart: always
+    entrypoint: [ "redis-server", "/etc/redis.conf" ]
+    environment:
+      TZ: "$TZ"
+    networks:
+      - default
+
 volumes:
   mysql5f:
+  GO_PKG:
+  GO_CACHE:
