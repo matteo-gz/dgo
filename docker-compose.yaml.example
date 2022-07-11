@@ -78,7 +78,7 @@ services:
     volumes:
       - "./data/beanstalkd:/data/beanstalkd"
     ports:
-      - "11300:11300"
+      - "7771:11300"
 
   beanstalkd2:
     container_name: beanstalkd2
