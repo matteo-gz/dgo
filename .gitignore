@@ -7,3 +7,4 @@ serv/cache
 code
 data
 gopath/cache
+*.log

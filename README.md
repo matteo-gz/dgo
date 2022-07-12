@@ -16,3 +16,7 @@ go install github.com/vadimi/grpc-client-cli/cmd/grpc-client-cli@v1.11.0
 go get github.com/ktr0731/evans
 go install github.com/go-kratos/kratos/cmd/kratos/v2@latest
 ```
+```
+# host
+127.0.0.1 netdata.local.z portainer.local.z beanstalkd-console.local.z
+```
