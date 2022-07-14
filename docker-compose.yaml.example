@@ -10,6 +10,7 @@ services:
         CONFIG_NACOS_LOGDIR: ${CONFIG_NACOS_LOGDIR}
         CONFIG_NACOS_CACHEDIR: ${CONFIG_NACOS_CACHEDIR}
         CONFIG_NACOS_GROUP: ${CONFIG_NACOS_GROUP}
+        GO_VERSION: 1.18
     container_name: go
     volumes:
       - ${GO_DIR}:/go/src:rw
@@ -83,7 +84,7 @@ services:
     environment:
       TZ: Asia/Shanghai
     volumes:
-      - "./data/beanstalkd:/data/beanstalkd"
+      - beanstalkd:/data/beanstalkd:rw
     ports:
       - "7771:11300"
     command:
@@ -104,7 +105,7 @@ services:
     environment:
       TZ: Asia/Shanghai
     volumes:
-      - "./data/beanstalkd2:/data/beanstalkd"
+      - beanstalkd2:/data/beanstalkd
     ports:
       - "7772:11300"
     command:
@@ -170,9 +171,64 @@ services:
       TZ: "$TZ"
     restart: always
 
+  prometheus:
+    build:
+      context: ./serv/prometheus
+    container_name: prometheus
+    environment:
+      - TZ=${TZ}
+    privileged: true
+    volumes:
+      - ./serv/prometheus/prometheus.yml:/opt/bitnami/prometheus/conf/prometheus.yml  # 将 prometheus 配置文件挂载到容器里
+      - V_prometheus:/etc/prometheus
+    ports:
+      - "${PROMETHEUS_PORT}:9090"                     # 设置容器9090端口映射指定宿主机端口，用于宿主机访问可视化web
+    restart: always
+
+  grafana:
+    build:
+      context: ./serv/grafana
+    container_name: grafana
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "${GRAFANA_PORT}:3000"                        # 设置容器3000端口映射指定宿主机端口，用于宿主机访问可视化web
+    restart: always
+    volumes:
+      - V_grafana:/var/lib/grafana
+
+  etcd:                                  # 自定义容器名称
+    build:
+      context: ./serv/etcd                    # 指定构建使用的 Dockerfile 文件
+    container_name: etcd
+    environment:
+      - TZ=${TZ}
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+    ports:                               # 设置端口映射  etcdctl put /test/key "Hello world"
+      - "${ETCD_PORT}:2379"
+    restart: always
+    volumes:
+      - V_etcd:/bitnami/etcd
+
+  etcd-manage:
+    build:
+      context: ./serv/etcd-manage
+    container_name: etcdm
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "${ETCD_MANAGE_PORT}:8080"                    # 设置容器8080端口映射指定宿主机端口，用于宿主机访问可视化web
+    depends_on:                                       # 依赖容器
+      - etcd                                          # 在 etcd 服务容器启动后启动
+    restart: always
+
 volumes:
   mysql5f:
   GO_PKG:
   GO_CACHE:
   beanstalkd:
   beanstalkd2:
+  V_prometheus:
+  V_grafana:
+  V_etcd:

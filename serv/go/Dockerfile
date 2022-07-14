@@ -1,4 +1,5 @@
-FROM golang:1.17-alpine
+ARG GO_VERSION
+FROM golang:${GO_VERSION}-alpine
 #cn network
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
 # go path
