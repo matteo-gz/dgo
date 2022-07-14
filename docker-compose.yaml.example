@@ -196,6 +196,7 @@ services:
     restart: always
     volumes:
       - V_grafana:/var/lib/grafana
+      - ./serv/grafana/conf.ini:/etc/grafana/grafana.ini
 
   etcd:                                  # 自定义容器名称
     build:
