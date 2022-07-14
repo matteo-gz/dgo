@@ -8,3 +8,4 @@ code
 data
 gopath/cache
 *.log
+serv/grafana/conf.ini
