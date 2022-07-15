@@ -27,6 +27,8 @@ scrape_configs:
 
     static_configs:
       - targets: ["localhost:9090"]
+        labels:
+          instance: 'prometheus'
 
   # 我们自己的商城项目配置
   - job_name: 'go_service'
@@ -36,8 +38,10 @@ scrape_configs:
         labels:
           app: 'ping-api'
           env: 'test'
+          instance: 'ping-api'
 
       - targets: ['go:8104']
         labels:
-            app: 'ping-rpc'
-            env: 'test'
+          app: 'ping-rpc'
+          env: 'test'
+          instance: 'ping-rpc'
