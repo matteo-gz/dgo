@@ -18,5 +18,5 @@ go install github.com/go-kratos/kratos/cmd/kratos/v2@latest
 ```
 ```
 # host
-127.0.0.1 netdata.local.z portainer.local.z beanstalkd-console.local.z
+127.0.0.1 netdata.local.z portainer.local.z beanstalkd-console.local.z prometheus.local.z grafana.local.z etcdm.local.z hotrod.local.z jaeger.local.z
 ```
