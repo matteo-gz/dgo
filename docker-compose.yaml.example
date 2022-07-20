@@ -19,6 +19,8 @@ services:
       - GO_CACHE:/root/.cache/go-build:rw
     ports:
       - "30099:30099"
+      - "8105:8105"
+      - "8106:8106"
     privileged: true
     stdin_open: true
     tty: true
@@ -246,6 +248,21 @@ services:
       - JAEGER_AGENT_PORT=6831
     depends_on:
       - jaeger
+
+  prof:
+    build:
+      context: ./serv/prof
+    container_name: prof
+    volumes:
+      - ./data/prof/storage:/go/src/storage:rw
+      - ./data/prof/logs:/go/src/logs:rw
+    privileged: true
+    stdin_open: true
+    tty: true
+    command:
+      - prof
+    ports:
+      - "8201:8201"
 
 volumes:
   mysql5f:
