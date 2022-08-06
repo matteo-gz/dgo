@@ -1,0 +1,1 @@
+FROM jaegertracing/example-hotrod:latest

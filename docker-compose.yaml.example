@@ -1,0 +1,275 @@
+version: "3"
+services:
+  go:
+    build:
+      context: ./serv/go
+      args:
+        CONFIG_NACOS_HOST: ${CONFIG_NACOS_HOST2}
+        CONFIG_NACOS_USERNAME: ${CONFIG_NACOS_USERNAME}
+        CONFIG_NACOS_PASSWD: ${CONFIG_NACOS_PASSWD}
+        CONFIG_NACOS_LOGDIR: ${CONFIG_NACOS_LOGDIR}
+        CONFIG_NACOS_CACHEDIR: ${CONFIG_NACOS_CACHEDIR}
+        CONFIG_NACOS_GROUP: ${CONFIG_NACOS_GROUP}
+        GO_VERSION: 1.18
+    container_name: go
+    volumes:
+      - ${GO_DIR}:/go/src:rw
+      - ${GO_BIN}:/go/bin:rw
+      - GO_PKG:/go/pkg/mod:rw
+      - GO_CACHE:/root/.cache/go-build:rw
+    ports:
+      - "30099:30099"
+      - "8105:8105"
+      - "8106:8106"
+    privileged: true
+    stdin_open: true
+    tty: true
+  netdata:
+    image: netdata/netdata
+    container_name: netdata
+    ports:
+      - 19999:19999
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/portainer:/data
+    ports:
+      - 9009:9000
+
+
+
+  mysql5:
+    image: mysql/mysql-server:${MYSQL5_VERSION}
+    container_name: mysql5
+    ports:
+      - "${MYSQL5_HOST_PORT}:3306"
+    volumes:
+      - ${MYSQL5_CONF_FILE}:/etc/mysql/conf.d/mysql.cnf:ro
+      - mysql5f:/var/lib/mysql/:rw
+      - ${MYSQL5_LOG_DIR}:/var/log/mysql/:rw
+    restart: always
+    networks:
+      - default
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL5_ROOT_PASSWORD}"
+      MYSQL_ROOT_HOST: "${MYSQL5_ROOT_HOST}"
+      TZ: "$TZ"
+
+  beanstalkd:
+    container_name: beanstalkd
+    build:
+      context: ./serv/beanstalkd
+      dockerfile: Dockerfile
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - beanstalkd:/data/beanstalkd:rw
+    ports:
+      - "7771:11300"
+    command:
+      - -b
+      - /data/beanstalkd
+
+  beanstalkd2:
+    container_name: beanstalkd2
+    build:
+      context: ./serv/beanstalkd
+      dockerfile: Dockerfile
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - beanstalkd2:/data/beanstalkd
+    ports:
+      - "7772:11300"
+    command:
+      - -b
+      - /data/beanstalkd
+
+  beanstalkd-console:
+    container_name: beanstalkd-console
+    build:
+      context: ./serv/beanstalkd-console
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - TZ=Asia/Shanghai
+      - AUTH=enable
+      - AUTH_USERNAME=admin
+      - AUTH_PASSWORD=nosmoking
+      - BEANSTALKD_PORT_11300_TCP_ADDR=beanstalkd
+    ports:
+      - "2080:2080"
+    depends_on:
+      - beanstalkd
+
+  redis:
+    image: redis:${REDIS_VERSION}
+    container_name: redis
+    ports:
+      - "${REDIS_HOST_PORT}:6379"
+    volumes:
+      - ${REDIS_CONF_FILE}:/etc/redis.conf:ro
+      - ${DATA_DIR}/redis:/data/:rw
+    restart: always
+    entrypoint: [ "redis-server", "/etc/redis.conf" ]
+    environment:
+      TZ: "$TZ"
+    networks:
+      - default
+
+  nginx:
+    build:
+      context: ./serv/nginx
+      args:
+        NGINX_VERSION: nginx:${NGINX_VERSION}
+        CONTAINER_PACKAGE_URL: ${CONTAINER_PACKAGE_URL}
+        NGINX_INSTALL_APPS: ${NGINX_INSTALL_APPS}
+    container_name: nginx
+    ports:
+      - "${NGINX_HTTP_HOST_PORT}:80"
+      - "${NGINX_HTTPS_HOST_PORT}:443"
+    volumes:
+      - ${SOURCE_DIR}:/www/:rw
+      - ${NGINX_SSL_CERTIFICATE_DIR}:/ssl:rw
+      - ${NGINX_CONFD_DIR}:/etc/nginx/conf.d/:rw
+      - ${NGINX_CONF_FILE}:/etc/nginx/nginx.conf:ro
+      - ${NGINX_FASTCGI_PHP_CONF}:/etc/nginx/fastcgi-php.conf:ro
+      - ${NGINX_FASTCGI_PARAMS}:/etc/nginx/fastcgi_params:ro
+      - ${NGINX_LOG_DIR}:/var/log/nginx/:rw
+    environment:
+      TZ: "$TZ"
+    restart: always
+
+  prometheus:
+    build:
+      context: ./serv/prometheus
+    container_name: prometheus
+    environment:
+      - TZ=${TZ}
+    privileged: true
+    volumes:
+      - ./serv/prometheus/prometheus.yml:/opt/bitnami/prometheus/conf/prometheus.yml  # 将 prometheus 配置文件挂载到容器里
+      - V_prometheus:/etc/prometheus
+    ports:
+      - "${PROMETHEUS_PORT}:9090"                     # 设置容器9090端口映射指定宿主机端口，用于宿主机访问可视化web
+    restart: always
+
+  grafana:
+    build:
+      context: ./serv/grafana
+    container_name: grafana
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "${GRAFANA_PORT}:3000"                        # 设置容器3000端口映射指定宿主机端口，用于宿主机访问可视化web
+    restart: always
+    volumes:
+      - V_grafana:/var/lib/grafana
+      - ./serv/grafana/conf.ini:/etc/grafana/grafana.ini
+
+  etcd:                                  # 自定义容器名称
+    build:
+      context: ./serv/etcd                    # 指定构建使用的 Dockerfile 文件
+    container_name: etcd
+    environment:
+      - TZ=${TZ}
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+    ports:                               # 设置端口映射  etcdctl put /test/key "Hello world"
+      - "${ETCD_PORT}:2379"
+    restart: always
+    volumes:
+      - V_etcd:/bitnami/etcd
+
+  etcd-manage:
+    build:
+      context: ./serv/etcd-manage
+    container_name: etcdm
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "${ETCD_MANAGE_PORT}:8080"                    # 设置容器8080端口映射指定宿主机端口，用于宿主机访问可视化web
+    depends_on:                                       # 依赖容器
+      - etcd                                          # 在 etcd 服务容器启动后启动
+    restart: always
+
+  jaeger:
+    build:
+      context: ./serv/jaeger
+    container_name: jaeger
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "14268:14268"
+  hotrod:
+    build:
+      context: ./serv/hotrod
+    container_name: hotrod
+    ports:
+      - "8080:8080"
+    command: ["all"]
+    environment:
+      - JAEGER_AGENT_HOST=jaeger
+      # Note: if your application is using Node.js Jaeger Client, you need port 6832,
+      #       unless issue https://github.com/jaegertracing/jaeger/issues/1596 is resolved.
+      - JAEGER_AGENT_PORT=6831
+    depends_on:
+      - jaeger
+
+  prof:
+    build:
+      context: ./serv/prof
+    container_name: prof
+    volumes:
+      - ./data/prof/storage:/go/src/storage:rw
+      - ./data/prof/logs:/go/src/logs:rw
+    privileged: true
+    stdin_open: true
+    tty: true
+    command:
+      - prof
+    ports:
+      - "8201:8201"
+
+volumes:
+  mysql5f:
+  GO_PKG:
+  GO_CACHE:
+  beanstalkd:
+  beanstalkd2:
+  V_prometheus:
+  V_grafana:
+  V_etcd:

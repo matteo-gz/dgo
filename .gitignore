@@ -1,0 +1,11 @@
+gopath/bin
+gopath/mod
+.idea
+.env
+docker-compose.yaml
+serv/cache
+code
+data
+gopath/cache
+*.log
+serv/grafana/conf.ini
