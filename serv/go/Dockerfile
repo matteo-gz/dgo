@@ -30,5 +30,5 @@ ENV CONFIG_NACOS_LOGDIR=${CONFIG_NACOS_LOGDIR}
 ENV CONFIG_NACOS_CACHEDIR=${CONFIG_NACOS_CACHEDIR}
 ENV CONFIG_NACOS_GROUP=${CONFIG_NACOS_GROUP}
 RUN apk add gcc
-RUN CGO_ENABLED=0 go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
+RUN CGO_ENABLED=0 GOPROXY=https://goproxy.cn/,direct go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
 RUN apk add make
